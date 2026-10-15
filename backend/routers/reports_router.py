@@ -66,10 +66,13 @@ async def create_report(
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
 
         file_bytes = await file.read()
-        with open(file_path, "wb") as f:
-            f.write(file_bytes)
-
-        image_url = f"/uploads/{unique_filename}"
+        try:
+            with open(file_path, "wb") as f:
+                f.write(file_bytes)
+            image_url = f"/uploads/{unique_filename}"
+        except Exception as e:
+            print(f"[reports] Warning: could not write uploaded file {file_path}: {e}")
+            image_url = "/seed_assets/default_dumping.jpg"
 
         # Extract EXIF GPS
         gps_result = extract_exif_gps(file_bytes)
@@ -96,6 +99,8 @@ async def create_report(
     min_dist_meters = float("inf")
 
     for inc in open_incidents:
+        if inc.latitude is None or inc.longitude is None:
+            continue
         dist_m = haversine_distance_meters(latitude, longitude, inc.latitude, inc.longitude)
         if dist_m <= 100.0 and dist_m < min_dist_meters:
             min_dist_meters = dist_m
@@ -383,9 +388,21 @@ async def update_report_status(
             unique_filename = f"resolved_{uuid.uuid4().hex}{file_ext}"
             file_path = os.path.join(UPLOAD_DIR, unique_filename)
             file_bytes = await after_file.read()
-            with open(file_path, "wb") as f:
-                f.write(file_bytes)
-            incident.after_image_url = f"/uploads/{unique_filename}"
+            try:
+                with open(file_path, "wb") as f:
+                    f.write(file_bytes)
+                incident.after_image_url = f"/uploads/{unique_filename}"
+            except Exception as e:
+                print(f"[reports] Warning: could not write resolved file {file_path}: {e}")
+                category_after_map = {
+                    "illegal_dumping": "/seed_assets/dumping_after.jpg",
+                    "water_pollution": "/seed_assets/water_after.jpg",
+                    "air_pollution": "/seed_assets/air_after.jpg",
+                    "deforestation": "/seed_assets/tree_after.jpg",
+                    "noise": "/seed_assets/noise_after.jpg",
+                    "other": "/seed_assets/dumping_after.jpg"
+                }
+                incident.after_image_url = category_after_map.get(incident.category, "/seed_assets/dumping_after.jpg")
         elif not incident.after_image_url:
             category_after_map = {
                 "illegal_dumping": "/seed_assets/dumping_after.jpg",

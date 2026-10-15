@@ -42,8 +42,15 @@ async function request(endpoint, options = {}) {
   if (!response.ok) {
     let errorMessage = `Request failed (${response.status})`;
     try {
-      const errorJson = await response.json();
-      errorMessage = errorJson.detail || errorMessage;
+      const text = await response.text();
+      try {
+        const errorJson = JSON.parse(text);
+        errorMessage = errorJson.detail || errorJson.message || errorMessage;
+      } catch {
+        if (text && text.trim().length > 0 && text.length < 200) {
+          errorMessage = `${errorMessage}: ${text.trim()}`;
+        }
+      }
     } catch (e) {
       // ignore
     }

@@ -28,7 +28,10 @@ def create_sample_image(filename: str, title: str, subtitle: str, bg_color: tupl
     draw.text((50, 320), f"Timestamp: {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}", fill=(130, 190, 175))
     draw.text((50, 400), "STATUS: VERIFIED ENVIRONMENTAL EVIDENCE", fill=accent_color)
 
-    img.save(filepath, "JPEG", quality=90)
+    try:
+        img.save(filepath, "JPEG", quality=90)
+    except Exception as e:
+        print(f"[seed_data] Notice: Could not write {filepath}: {e}")
     return f"/seed_assets/{filename}"
 
 
